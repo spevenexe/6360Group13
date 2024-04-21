@@ -1,6 +1,6 @@
 import numpy as np
 from src.indexNSG import IndexNSG
-from src.paramters import Parameters
+from parameters import Parameters
 
 def main():
     dimension = 100
