@@ -2,7 +2,8 @@ import threading
 import heapq
 import random
 import numpy as np
-from neighbor import Neighbor
+from parameters import Parameters
+from neighbor import Neighbor, InsertIntoPool
 from scipy.spatial import distance
 from index import distance_l2,distance_inner_product
 
@@ -22,6 +23,7 @@ class IndexNSG:
         self.final_graph = [[] for _ in range(n)]
         self.locks = [threading.Lock() for _ in range(n)]
         self.has_built = False
+        self.ep = 0
 
     def load(self, filename):
         try:
@@ -193,7 +195,66 @@ class IndexNSG:
             self.final_graph[node1].append(Neighbor(node2, distance))
             self.final_graph[node2].append(Neighbor(node1, distance))
 
-
-    def search(self, query, k, parameters):
-        retset, _ = self.get_neighbors(query, parameters)
-        return sorted(retset, key=lambda x: x[1])[:k]
+    # note: the function now returns indices
+    # instead of receiving it as an arg and modifying directly
+    # fuck c++ coding conventions
+    # still need to check if this even works
+    def search(self, query : list[float], x : list[float], K : list[float], parameters : Parameters):
+        indices = []    
+        L = parameters.get("L_search")
+        data = x
+        retset = np.empty(L,Neighbor)
+        init_ids = np.zeros(L,int)
+        flags = []
+        
+        tmp_l = 0
+        while tmp_l < L & tmp_l < len(self.final_graph_[self.ep]):
+            init_ids[tmp_l] = self.final_graph[self.ep][tmp_l]
+            flags[init_ids[tmp_l]] = True
+            tmp_l +=1
+        
+        while tmp_l < L:
+            id = random.randint(0,self.n-1)
+            if flags[id]: continue
+            flags[id] = True
+            init_ids[tmp_l] = id
+            tmp_l+=1
+        
+        for i in range(0,len(init_ids)):
+            id = init_ids[i]
+            # TODO compare needs to be made: see "distance.h"
+            dist = self.distance(data[self.dimension*id],query)
+            retset[i] = Neighbor(id, dist, True)
+        
+        retset[0:L].sort()
+        k = 0
+        while k < L(int):
+            nk = L
+            
+            if retset[k].flag:
+                retset[k].flag = False
+                n = retset[k].id
+                
+                for m in range(len(0,len(self.final_graph[n]))):
+                    id = self.final_graph[n][m]
+                    if flags[id]: continue
+                    flags[id] = True
+                    dist = self.distance(query,data + self.dimension*id)
+                    if dist >= retset[L-1].distance: continue
+                    nn = Neighbor(id,dist,True)
+                    # TODO: make InsertIntoPool
+                    r = InsertIntoPool(retset,L,nn)
+                    
+                    if r < nk: 
+                        nk = r
+            if nk <= k:
+                k = nk
+            else:
+                k+=1    
+        for i in range(0,K):
+            indices[i] = retset[i].id      
+        
+        return indices
+        
+        # retset, _ = self.get_neighbors(query, parameters)
+        # return sorted(retset, key=lambda x: x[1])[:k]

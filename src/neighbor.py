@@ -6,3 +6,6 @@ class Neighbor:
 
     def __lt__(self, other):
         return self.distance < other.distance
+
+def InsertIntoPool(addr : Neighbor, K : int, nn : Neighbor):
+    raise NotImplementedError
