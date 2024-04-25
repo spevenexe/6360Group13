@@ -1,9 +1,10 @@
 import threading
 import heapq
 import random
+import struct
 import numpy as np
 from parameters import Parameters
-from neighbor import Neighbor, InsertIntoPool
+from neighbor import Neighbor, insert_into_pool
 from scipy.spatial import distance
 from index import distance_l2,distance_inner_product
 
@@ -25,15 +26,26 @@ class IndexNSG:
         self.has_built = False
         self.ep = 0
 
-    def load(self, filename):
-        try:
-            self.final_graph = np.load(filename, allow_pickle=True).tolist()
-        except FileNotFoundError:
-            print(f"Error: The file {filename} does not exist.")
-        except IOError:
-            print(f"Error: An I/O error occurred while reading {filename}.")
-        except:
-            print("An unexpected error occurred while loading the graph.")
+    #test_nsg_search invokes index_nsg : load
+    def Load(self, filename):
+        with open(filename, 'rb') as f:
+            self.width = struct.unpack('I', f.read(4))[0]
+            self.ep_ = struct.unpack('I', f.read(4))[0]
+            # cc = 0
+            while True:
+                k_bytes = f.read(4)
+                if not k_bytes:
+                    break
+                k = struct.unpack('I', k_bytes)[0]
+
+                tmp_bytes = f.read(k * 4)
+                tmp = struct.unpack(f'{k}I', tmp_bytes)
+                # cc += tmp
+
+                self.final_graph_.append(list(tmp))
+        return self.final_graph_
+
+    # cc /= self.nd_
 
     def save(self, filename):
         try:
@@ -222,7 +234,6 @@ class IndexNSG:
         
         for i in range(0,len(init_ids)):
             id = init_ids[i]
-            # TODO compare needs to be made: see "distance.h"
             dist = self.distance(data[self.dimension*id],query)
             retset[i] = Neighbor(id, dist, True)
         
@@ -243,7 +254,7 @@ class IndexNSG:
                     if dist >= retset[L-1].distance: continue
                     nn = Neighbor(id,dist,True)
                     # TODO: make InsertIntoPool
-                    r = InsertIntoPool(retset,L,nn)
+                    r = insert_into_pool(retset,L,nn)
                     
                     if r < nk: 
                         nk = r
