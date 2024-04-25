@@ -60,7 +60,7 @@ class IndexNSG:
         with open(filename, 'rb') as f:
             graph_data = np.fromfile(f, dtype=np.uint32)
             k = graph_data[0]
-            self.final_graph = graph_data[1:].reshape(-1, k).tolist()
+            self.final_graph = graph_data.reshape(-1, k+1)[:,1:].tolist()
 
     def get_neighbors(self, query, parameters):
         L = parameters.get("L", 10)
