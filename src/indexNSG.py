@@ -30,7 +30,7 @@ class IndexNSG:
     def Load(self, filename):
         with open(filename, 'rb') as f:
             self.width = struct.unpack('I', f.read(4))[0]
-            self.ep_ = struct.unpack('I', f.read(4))[0]
+            self.ep = struct.unpack('I', f.read(4))[0]
             # cc = 0
             while True:
                 k_bytes = f.read(4)
@@ -359,7 +359,7 @@ class IndexNSG:
     
 
     def tree_grow(self, parameter):
-        root = self.ep_
+        root = self.ep
         flags = [False] * self.n
         unlinked_cnt = 0
         while unlinked_cnt < self.n:
