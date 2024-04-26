@@ -1,8 +1,10 @@
 import threading
 import heapq
+import itertools
 import random
 import struct
 import numpy as np
+from concurrent.futures import ThreadPoolExecutor
 from parameters import Parameters
 from neighbor import Neighbor, insert_into_pool
 from scipy.spatial import distance
@@ -115,51 +117,97 @@ class IndexNSG:
         retset, _ = self.get_neighbors(center, parameters)
         self.ep = retset[0][0]
 
-    def sync_prune(self, q, pool, parameters, flags, cut_graph):
-        R = parameters.get("R", 100)
-        C = parameters.get("C", 100)
-        sorted_pool = sorted(pool)[:R]
 
-        with self.locks[q]:
-            for neighbor in sorted_pool:
-                if not flags[neighbor.id]:
-                    cut_graph[q].append(neighbor)
-                    flags[neighbor.id] = True
-                    if len(cut_graph[q]) >= C:
-                        break
+    def sync_prune(self, q, pool, parameter, flags, cut_graph):
+        range_r = parameter['R']
+        maxc = parameter['C']
+        start = 0
 
-    def build(self, data, parameters):
+        # Collect eligible neighbors
+        for nn in self.final_graph[q]:
+            if flags[nn]:
+                continue
+            dist = distance.euclidean(self.data[q], self.data[nn])
+            pool.append(Neighbor(nn, dist))
 
-        if data is None or not data.shape[0]:
-            raise ValueError("Data is empty or None")
-        if data.ndim != 2:
-            raise ValueError("Data must be a 2D array")
-    
+        # Sort neighbors by distance
+        pool.sort()
+
+        # Start could be incremented if the closest neighbor is itself (q)
+        if len(pool) > 0 and pool[start].id == q: start += 1
+        if pool: result = [pool[start]]
+        else: result = []
+
+        # Prune the pool to meet the criteria
+        while len(result) < range_r and start < len(pool) and start < maxc:
+            p = pool[start]
+            occlude = False
+            for t in result:
+                if p.id == t.id:
+                    occlude = True
+                    break
+                # Check if another neighbor is closer to t than p is to q
+                djk = distance.euclidean(self.data[t.id], self.data[p.id])
+                if djk < p.distance:
+                    occlude = True
+                    break
+            if not occlude:
+                result.append(p)
+            start += 1
+
+        # Update the cut graph with the pruned results
+        for t, neighbor in enumerate(result):
+            cut_graph[q * range_r + t] = Neighbor(id=neighbor.id, distance=neighbor.distance)
+
+        # Mark unused slots with a special flag (-1)
+        if len(result) < range_r:
+            cut_graph[q * range_r + len(result)].distance = -1
+
+
+    def link(self, parameters, cut_graph):
+        range_r = parameters['R']
+        step_size = self.n // 100
+        progress = itertools.count()
+
+        def process_node(n):
+            point = self.data[n * self.dimension:(n + 1) * self.dimension]
+            pool, tmp = [], []
+            flags = np.zeros(self.nd, dtype=bool)
+
+            self.get_neighbors(point, parameters, flags, tmp, pool)
+            self.sync_prune(n, pool, parameters, flags, cut_graph)
+
+        with ThreadPoolExecutor(max_workers=step_size) as executor:
+            executor.map(process_node, range(self.n))
+
+
+    def build(self, n, data, parameters):
+        nn_graph_path = parameters['nn_graph_path']
+        range_r = parameters['R']
+        self.load_nn_graph(nn_graph_path)
         self.data = data
-        n, dimension = data.shape
-        l = parameters.get("l", 40)
-        m = parameters.get("m", 50)
-
-        centroid = np.mean(self.data, axis=0)
-        dists_to_centroid = np.linalg.norm(self.data - centroid, axis=1)
-        navigating_node = np.argmin(dists_to_centroid)
+        self.init_graph(parameters)
+        cut_graph = [Neighbor() for _ in range(n * range_r)]
+        self.link(parameters, cut_graph)
+        self.final_graph = [[] for _ in range(n)]
 
         for i in range(n):
+            pool = cut_graph[i * range_r:(i + 1) * range_r]
+            pool_size = 0
+            for neighbor in pool:
+                if neighbor.distance == -1:
+                    break
+                pool_size += 1
 
-            candidate_pool = self.search_on_graph(i, l)
-            candidate_pool.sort(key=lambda x: x.distance)
-            
-            if candidate_pool:
-                nearest_neighbor = candidate_pool[0]
-                self.final_graph[i].append(nearest_neighbor)
+            self.final_graph[i] = [neighbor.id for neighbor in pool[:pool_size]]
 
-                for neighbor in candidate_pool[1:]:
-                    if self.no_conflict(i, neighbor, m):
-                        self.final_graph[i].append(neighbor)
-                        if len(self.final_graph[i]) >= m:
-                            break
+        self.tree_grow(parameters)
 
-        self.build_dfs_tree(navigating_node)
+        max_degree = max(len(g) for g in self.final_graph)
+        min_degree = min(len(g) for g in self.final_graph)
+        avg_degree = sum(len(g) for g in self.final_graph) / n
+        print(f"Degree Statistics: Max = {max_degree}, Min = {min_degree}, Avg = {avg_degree:.2f}")
+
         self.has_built = True
 
 

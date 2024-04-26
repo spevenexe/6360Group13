@@ -1,5 +1,5 @@
 class Neighbor:
-    def __init__(self, id, distance, flag=False):
+    def __init__(self, id=0, distance=0, flag=False):
         self.id = id
         self.distance = distance
         self.flag = flag
