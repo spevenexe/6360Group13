@@ -32,8 +32,9 @@ def main():
     start = time.process_time()
     res = []
     for i in range(0,query_num):
-        tmp = index.search(query_load[(i*dim):],data_load,K,paras)
+        tmp = index.search(query_load[i:],data_load,K,paras)
         res.append(tmp)
+
     end = time.process_time()
     diff = end - start
     print("Search Time: ", diff)

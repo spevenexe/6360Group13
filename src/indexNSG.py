@@ -215,7 +215,8 @@ class IndexNSG:
     # fuck c++ coding conventions
     # still need to check if this even works
     def search(self, query : list[float], x : list[float], K : list[float], parameters : Parameters):
-        indices = []    
+        print(query)
+        indices = np.empty(K,int)    
         # print("L: ",parameters.get("L_search"))
         L = int(parameters.get("L_search"))
         data = x
@@ -224,7 +225,7 @@ class IndexNSG:
         flags = np.empty(self.n,bool)
         
         tmp_l = 0
-        while tmp_l < L & tmp_l < len(self.final_graph[self.ep]):
+        while tmp_l < L and tmp_l < len(self.final_graph[self.ep]):
             init_ids[tmp_l] = self.final_graph[self.ep][tmp_l]
             flags[init_ids[tmp_l]] = True
             tmp_l +=1
@@ -236,25 +237,28 @@ class IndexNSG:
             init_ids[tmp_l] = id
             tmp_l+=1
         
+        # print("finished random")
+        
         for i in range(0,len(init_ids)):
             id = init_ids[i]
-            dist = self.distance(data[self.dimension*id],query)
+            dist = self.distance(data[id],query)
             retset[i] = Neighbor(id, dist, True)
         
-        retset[0:L].sort()
+        retset[0:L] = sorted(retset[0:L])
+        # print(retset)
         k = 0
-        while k < L(int):
+        while k < L:
             nk = L
             
             if retset[k].flag:
                 retset[k].flag = False
                 n = retset[k].id
                 
-                for m in range(len(0,len(self.final_graph[n]))):
+                for m in range(0,len(self.final_graph[n])):
                     id = self.final_graph[n][m]
                     if flags[id]: continue
                     flags[id] = True
-                    dist = self.distance(query,data + self.dimension*id)
+                    dist = self.distance(query,data[id])
                     if dist >= retset[L-1].distance: continue
                     nn = Neighbor(id,dist,True)
                     # TODO: make InsertIntoPool
