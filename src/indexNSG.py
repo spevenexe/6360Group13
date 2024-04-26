@@ -1,8 +1,10 @@
 import threading
 import heapq
 import random
+import struct
 import numpy as np
-from neighbor import Neighbor
+from parameters import Parameters
+from neighbor import Neighbor, insert_into_pool
 from scipy.spatial import distance
 from index import distance_l2,distance_inner_product
 
@@ -22,31 +24,46 @@ class IndexNSG:
         self.final_graph = [[] for _ in range(n)]
         self.locks = [threading.Lock() for _ in range(n)]
         self.has_built = False
+        self.ep = 0
 
-    def load(self, filename):
-        try:
-            self.final_graph = np.load(filename, allow_pickle=True).tolist()
-        except FileNotFoundError:
-            print(f"Error: The file {filename} does not exist.")
-        except IOError:
-            print(f"Error: An I/O error occurred while reading {filename}.")
-        except:
-            print("An unexpected error occurred while loading the graph.")
+    #test_nsg_search invokes index_nsg : load
+    def Load(self, filename):
+        with open(filename, 'rb') as f:
+            self.width = struct.unpack('I', f.read(4))[0]
+            self.ep_ = struct.unpack('I', f.read(4))[0]
+            # cc = 0
+            while True:
+                k_bytes = f.read(4)
+                if not k_bytes:
+                    break
+                k = struct.unpack('I', k_bytes)[0]
+
+                tmp_bytes = f.read(k * 4)
+                tmp = struct.unpack(f'{k}I', tmp_bytes)
+                # cc += tmp
+
+                self.final_graph.append(list(tmp))
+        return self.final_graph
+
+    # cc /= self.nd_
 
     def save(self, filename):
-        try:
-            np.save(filename, np.array(self.final_graph, dtype=object))
-        except IOError:
-            print(f"Error: An I/O error occurred while saving {filename}.")
-        except:
-            print("An unexpected error occurred while saving the graph.")
+        assert len(self.final_graph) == self.n, "Final graph size does not match the expected size"
+        with open(filename, 'wb') as f:
+            f.write(struct.pack('I', self.width))
+            f.write(struct.pack('I', self.ep))
+            for neighbors in self.final_graph:
+                GK = len(neighbors)
+                f.write(struct.pack('I', GK))
+                if GK > 0:
+                    f.write(struct.pack(f'{GK}I', *neighbors))
 
-
+    # tested and correct
     def load_nn_graph(self, filename):
         with open(filename, 'rb') as f:
             graph_data = np.fromfile(f, dtype=np.uint32)
             k = graph_data[0]
-            self.final_graph = graph_data[1:].reshape(-1, k).tolist()
+            self.final_graph = graph_data.reshape(-1, k+1)[:,1:].tolist()
 
     def get_neighbors(self, query, parameters):
         L = parameters.get("L", 10)
@@ -193,7 +210,65 @@ class IndexNSG:
             self.final_graph[node1].append(Neighbor(node2, distance))
             self.final_graph[node2].append(Neighbor(node1, distance))
 
-
-    def search(self, query, k, parameters):
-        retset, _ = self.get_neighbors(query, parameters)
-        return sorted(retset, key=lambda x: x[1])[:k]
+    # note: the function now returns indices
+    # instead of receiving it as an arg and modifying directly
+    # fuck c++ coding conventions
+    # still need to check if this even works
+    def search(self, query : list[float], x : list[float], K : list[float], parameters : Parameters):
+        indices = []    
+        L = parameters.get("L_search")
+        data = x
+        retset = np.empty(L,Neighbor)
+        init_ids = np.zeros(L,int)
+        flags = []
+        
+        tmp_l = 0
+        while tmp_l < L & tmp_l < len(self.final_graph[self.ep]):
+            init_ids[tmp_l] = self.final_graph[self.ep][tmp_l]
+            flags[init_ids[tmp_l]] = True
+            tmp_l +=1
+        
+        while tmp_l < L:
+            id = random.randint(0,self.n-1)
+            if flags[id]: continue
+            flags[id] = True
+            init_ids[tmp_l] = id
+            tmp_l+=1
+        
+        for i in range(0,len(init_ids)):
+            id = init_ids[i]
+            dist = self.distance(data[self.dimension*id],query)
+            retset[i] = Neighbor(id, dist, True)
+        
+        retset[0:L].sort()
+        k = 0
+        while k < L(int):
+            nk = L
+            
+            if retset[k].flag:
+                retset[k].flag = False
+                n = retset[k].id
+                
+                for m in range(len(0,len(self.final_graph[n]))):
+                    id = self.final_graph[n][m]
+                    if flags[id]: continue
+                    flags[id] = True
+                    dist = self.distance(query,data + self.dimension*id)
+                    if dist >= retset[L-1].distance: continue
+                    nn = Neighbor(id,dist,True)
+                    # TODO: make InsertIntoPool
+                    r = insert_into_pool(retset,L,nn)
+                    
+                    if r < nk: 
+                        nk = r
+            if nk <= k:
+                k = nk
+            else:
+                k+=1    
+        for i in range(0,K):
+            indices[i] = retset[i].id      
+        
+        return indices
+        
+        # retset, _ = self.get_neighbors(query, parameters)
+        # return sorted(retset, key=lambda x: x[1])[:k]

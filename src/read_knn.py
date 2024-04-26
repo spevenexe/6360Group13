@@ -11,10 +11,8 @@ def load_data(filename):
         fsize = file.tell()
         num = fsize // ((dim + 1) * 4)
 
-
         data = np.empty((num, dim), dtype=np.int32)
 
-        
         file.seek(0)
         for i in range(num):
             file.seek(4, os.SEEK_CUR)
