@@ -241,7 +241,6 @@ class IndexNSG:
     # fuck c++ coding conventions
     # still need to check if this even works
     def search(self, query : list[float], x : list[float], K : list[float], parameters : Parameters):
-        print(query)
         indices = np.empty(K,int)    
         # print("L: ",parameters.get("L_search"))
         L = int(parameters.get("L_search"))
@@ -249,6 +248,9 @@ class IndexNSG:
         retset = np.empty(L+1,Neighbor)
         init_ids = np.zeros(L,int)
         flags = np.empty(self.n,bool)
+        for b in flags:
+            flags[b]=False
+        # print(flags)
         
         tmp_l = 0
         while tmp_l < L and tmp_l < len(self.final_graph[self.ep]):
