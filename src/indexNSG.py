@@ -216,11 +216,12 @@ class IndexNSG:
     # still need to check if this even works
     def search(self, query : list[float], x : list[float], K : list[float], parameters : Parameters):
         indices = []    
-        L = parameters.get("L_search")
+        # print("L: ",parameters.get("L_search"))
+        L = int(parameters.get("L_search"))
         data = x
-        retset = np.empty(L,Neighbor)
+        retset = np.empty(L+1,Neighbor)
         init_ids = np.zeros(L,int)
-        flags = []
+        flags = np.empty(self.n,bool)
         
         tmp_l = 0
         while tmp_l < L & tmp_l < len(self.final_graph[self.ep]):
