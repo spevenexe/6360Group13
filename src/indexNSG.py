@@ -42,8 +42,8 @@ class IndexNSG:
                 tmp = struct.unpack(f'{k}I', tmp_bytes)
                 # cc += tmp
 
-                self.final_graph_.append(list(tmp))
-        return self.final_graph_
+                self.final_graph.append(list(tmp))
+        return self.final_graph
 
     # cc /= self.nd_
 
@@ -55,7 +55,7 @@ class IndexNSG:
         except:
             print("An unexpected error occurred while saving the graph.")
 
-
+    # tested and correct
     def load_nn_graph(self, filename):
         with open(filename, 'rb') as f:
             graph_data = np.fromfile(f, dtype=np.uint32)
@@ -220,7 +220,7 @@ class IndexNSG:
         flags = []
         
         tmp_l = 0
-        while tmp_l < L & tmp_l < len(self.final_graph_[self.ep]):
+        while tmp_l < L & tmp_l < len(self.final_graph[self.ep]):
             init_ids[tmp_l] = self.final_graph[self.ep][tmp_l]
             flags[init_ids[tmp_l]] = True
             tmp_l +=1
