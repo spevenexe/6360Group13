@@ -32,7 +32,7 @@ class IndexNSG:
     def Load(self, filename):
         with open(filename, 'rb') as f:
             self.width = struct.unpack('I', f.read(4))[0]
-            self.ep_ = struct.unpack('I', f.read(4))[0]
+            self.ep = struct.unpack('I', f.read(4))[0]
             # cc = 0
             while True:
                 k_bytes = f.read(4)
@@ -289,7 +289,6 @@ class IndexNSG:
     # fuck c++ coding conventions
     # still need to check if this even works
     def search(self, query : list[float], x : list[float], K : list[float], parameters : Parameters):
-        print(query)
         indices = np.empty(K,int)    
         # print("L: ",parameters.get("L_search"))
         L = int(parameters.get("L_search"))
@@ -297,6 +296,9 @@ class IndexNSG:
         retset = np.empty(L+1,Neighbor)
         init_ids = np.zeros(L,int)
         flags = np.empty(self.n,bool)
+        for b in flags:
+            flags[b]=False
+        # print(flags)
         
         tmp_l = 0
         while tmp_l < L and tmp_l < len(self.final_graph[self.ep]):
@@ -407,7 +409,7 @@ class IndexNSG:
     
 
     def tree_grow(self, parameter):
-        root = self.ep_
+        root = self.ep
         flags = [False] * self.n
         unlinked_cnt = 0
         while unlinked_cnt < self.n:

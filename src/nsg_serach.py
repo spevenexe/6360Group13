@@ -38,6 +38,8 @@ def main():
     end = time.process_time()
     diff = end - start
     print("Search Time: ", diff)
+    for vector in res:
+        print(vector)
     
 
 if __name__ == "__main__":
