@@ -69,23 +69,49 @@ class IndexNSG:
         L = parameters.get("L", 10)
         retset = []
         fullset = []
-        if self.initializer:
-            init_ids = self.initializer.search(query, L)
-        else:
-            init_ids = np.random.choice(self.n, L, replace=False)
+        flags = np.zeros(self.nd, dtype=bool)
 
-        for idx in init_ids:
-            dist = distance.euclidean(self.data[idx], query)
-            neighbor = Neighbor(idx, dist)
-            retset.append(neighbor)
-            fullset.append(neighbor)
+        # Initialize neighbors
+        init_ids = list(self.final_graph[self.ep][:L])
+        flags[init_ids] = True
+        additional_ids = np.random.choice([i for i in range(self.nd) if not flags[i]], size=L-len(init_ids), replace=False)
+        init_ids.extend(additional_ids)
+        flags[additional_ids] = True
+
+        for id in init_ids:
+            if id < self.nd:
+                dist = distance.euclidean(self.data[id], query)
+                retset.append(Neighbor(id, dist, True))
 
         retset.sort()
+
+        k = 0
+        while k < len(retset):
+            nk = len(retset)
+            if retset[k].flag:
+                current_id = retset[k].id
+                retset[k].flag = False
+                neighbors = self.final_graph[current_id]
+                for neighbor_id in neighbors:
+                    if flags[neighbor_id]:
+                        continue
+                    flags[neighbor_id] = True
+                    dist = distance.euclidean(self.data[neighbor_id], query)
+                    new_neighbor = Neighbor(neighbor_id, dist, True)
+                    fullset.append(new_neighbor)
+                    if dist < retset[-1].distance:
+                        r = insert_into_pool(retset, L, new_neighbor)
+                        if r < nk: nk = r
+                        if len(retset) > L: retset.pop()
+            if nk < k: k = nk
+            else: k+=1
+
         return retset, fullset
 
 
     def init_graph(self, parameters):
         center = np.mean(self.data, axis=0)
+        self.ep = random.randint(0, self.n - 1)
         retset, _ = self.get_neighbors(center, parameters)
         self.ep = retset[0][0]
 
