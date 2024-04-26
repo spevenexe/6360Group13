@@ -273,3 +273,71 @@ class IndexNSG:
         
         # retset, _ = self.get_neighbors(query, parameters)
         # return sorted(retset, key=lambda x: x[1])[:k]
+
+    def DFS(self, root, flag, cnt):
+        tmp = root
+        stack = [root]
+        if not flag[root]:
+            cnt[0] += 1
+        flag[root] = True
+        while stack:
+            next_node = None
+            for neighbor in self.final_graph[tmp]:
+                if not flag[neighbor]:
+                    next_node = neighbor
+                    break
+            if next_node is None:
+                stack.pop()
+                if not stack:
+                    break
+                tmp = stack[-1]
+                continue
+            tmp = next_node
+            flag[tmp] = True
+            stack.append(tmp)
+            cnt[0] += 1
+        return flag, cnt
+
+    def findroot(self, flag, root, parameter):
+        id = self.n
+        for i in range(self.n):
+            if not flag[i]:
+                id = i
+                break
+
+        if id == self.n:
+            return  # No Unlinked Node
+
+        tmp, pool = self.get_neighbors(self.data + self.dimension * id, parameter)
+        pool.sort()
+
+        found = False
+        for neighbor in pool:
+            if flag[neighbor.id]:
+                root[0] = neighbor.id
+                found = True
+                break
+
+        if not found:
+            while True:
+                rid = random.randint(0, self.n - 1)
+                if flag[rid]:
+                    root[0] = rid
+                    break
+
+        self.final_graph[root[0]].append(id)
+    
+
+    def tree_grow(self, parameter):
+        root = self.ep_
+        flags = [False] * self.n
+        unlinked_cnt = 0
+        while unlinked_cnt < self.n:
+            flags, unlinked_cnt = self.DFS(root, flags, unlinked_cnt)
+            if unlinked_cnt >= self.n:
+                break
+            self.findroot(flags, root, parameter)
+
+        for i in range(self.n):
+            if len(self.final_graph[i]) > width:
+                width = len(self.final_graph[i])
