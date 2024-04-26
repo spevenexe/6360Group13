@@ -241,15 +241,17 @@ class IndexNSG:
     # fuck c++ coding conventions
     # still need to check if this even works
     def search(self, query : list[float], x : list[float], K : list[float], parameters : Parameters):
-        indices = []    
-        L = parameters.get("L_search")
+        print(query)
+        indices = np.empty(K,int)    
+        # print("L: ",parameters.get("L_search"))
+        L = int(parameters.get("L_search"))
         data = x
-        retset = np.empty(L,Neighbor)
+        retset = np.empty(L+1,Neighbor)
         init_ids = np.zeros(L,int)
-        flags = []
+        flags = np.empty(self.n,bool)
         
         tmp_l = 0
-        while tmp_l < L & tmp_l < len(self.final_graph[self.ep]):
+        while tmp_l < L and tmp_l < len(self.final_graph[self.ep]):
             init_ids[tmp_l] = self.final_graph[self.ep][tmp_l]
             flags[init_ids[tmp_l]] = True
             tmp_l +=1
@@ -261,25 +263,28 @@ class IndexNSG:
             init_ids[tmp_l] = id
             tmp_l+=1
         
+        # print("finished random")
+        
         for i in range(0,len(init_ids)):
             id = init_ids[i]
-            dist = self.distance(data[self.dimension*id],query)
+            dist = self.distance(data[id],query)
             retset[i] = Neighbor(id, dist, True)
         
-        retset[0:L].sort()
+        retset[0:L] = sorted(retset[0:L])
+        # print(retset)
         k = 0
-        while k < L(int):
+        while k < L:
             nk = L
             
             if retset[k].flag:
                 retset[k].flag = False
                 n = retset[k].id
                 
-                for m in range(len(0,len(self.final_graph[n]))):
+                for m in range(0,len(self.final_graph[n])):
                     id = self.final_graph[n][m]
                     if flags[id]: continue
                     flags[id] = True
-                    dist = self.distance(query,data + self.dimension*id)
+                    dist = self.distance(query,data[id])
                     if dist >= retset[L-1].distance: continue
                     nn = Neighbor(id,dist,True)
                     # TODO: make InsertIntoPool
@@ -298,3 +303,71 @@ class IndexNSG:
         
         # retset, _ = self.get_neighbors(query, parameters)
         # return sorted(retset, key=lambda x: x[1])[:k]
+
+    def DFS(self, root, flag, cnt):
+        tmp = root
+        stack = [root]
+        if not flag[root]:
+            cnt[0] += 1
+        flag[root] = True
+        while stack:
+            next_node = None
+            for neighbor in self.final_graph[tmp]:
+                if not flag[neighbor]:
+                    next_node = neighbor
+                    break
+            if next_node is None:
+                stack.pop()
+                if not stack:
+                    break
+                tmp = stack[-1]
+                continue
+            tmp = next_node
+            flag[tmp] = True
+            stack.append(tmp)
+            cnt[0] += 1
+        return flag, cnt
+
+    def findroot(self, flag, root, parameter):
+        id = self.n
+        for i in range(self.n):
+            if not flag[i]:
+                id = i
+                break
+
+        if id == self.n:
+            return  # No Unlinked Node
+
+        tmp, pool = self.get_neighbors(self.data + self.dimension * id, parameter)
+        pool.sort()
+
+        found = False
+        for neighbor in pool:
+            if flag[neighbor.id]:
+                root[0] = neighbor.id
+                found = True
+                break
+
+        if not found:
+            while True:
+                rid = random.randint(0, self.n - 1)
+                if flag[rid]:
+                    root[0] = rid
+                    break
+
+        self.final_graph[root[0]].append(id)
+    
+
+    def tree_grow(self, parameter):
+        root = self.ep_
+        flags = [False] * self.n
+        unlinked_cnt = 0
+        while unlinked_cnt < self.n:
+            flags, unlinked_cnt = self.DFS(root, flags, unlinked_cnt)
+            if unlinked_cnt >= self.n:
+                break
+            self.findroot(flags, root, parameter)
+
+        for i in range(self.n):
+            if len(self.final_graph[i]) > width:
+                width = len(self.final_graph[i])
