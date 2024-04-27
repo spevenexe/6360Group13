@@ -27,7 +27,10 @@ def main():
         x = [l for l in range(search_LK,search_LK+20)]
         searchTime = [None]*len(x)
         for l in range(0,len(x)):
-            searchTime[l] = test(data_file,query_file,nsg_path,l+search_LK,search_LK)   
+            searchTime[l] = test(data_file,query_file,nsg_path,l+search_LK,search_LK)
+    
+    x = x[1:]
+    searchTime = searchTime[1:]
     x = np.array(x)
     searchTime = np.array(searchTime)
     plt.scatter(x,searchTime,color="b")
