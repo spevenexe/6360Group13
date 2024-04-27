@@ -30,7 +30,7 @@ def main():
             searchTime[l] = test(data_file,query_file,nsg_path,l+search_LK,search_LK)   
     x = np.array(x)
     searchTime = np.array(searchTime)
-    plt.scatter(x,searchTime,color="r")
+    plt.scatter(x,searchTime,color="b")
     plt.show()
     
 if __name__ == "__main__":
