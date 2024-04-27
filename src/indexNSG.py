@@ -164,10 +164,75 @@ class IndexNSG:
             cut_graph[q * range_r + len(result)].distance = -1
 
 
+    def inter_insert(self, n, range_r, locks, cut_graph):
+        src_pool = cut_graph[n]
+
+        for i in range(range_r):
+            if src_pool[i].distance == -1:
+                break
+            sn = Neighbor(n, src_pool[i].distance)
+            des = src_pool[i].id
+
+            if des >= len(cut_graph):
+                continue
+
+            des_pool = cut_graph[des]
+            temp_pool = []
+            dup = 0
+
+            with locks[des]:
+                for j in range(range_r):
+                    if des_pool[j].distance == -1:
+                        break
+                    if n == des_pool[j].id:
+                        dup = 1
+                        break
+                    temp_pool.append(des_pool[j])
+
+            if dup:
+                continue
+
+            temp_pool.append(sn)
+            temp_pool.sort()
+
+            if len(temp_pool) > range_r:
+                result = [temp_pool[0]]
+                start = 1
+                while len(result) < range_r and start < len(temp_pool):
+                    p = temp_pool[start]
+                    occlude = False
+                    for t in result:
+                        if p.id == t.id:
+                            occlude = True
+                            break
+                        djk = np.linalg.norm(self.data[t.id] - self.data[p.id])
+                        if djk < p.distance:
+                            occlude = True
+                            break
+                    if not occlude:
+                        result.append(p)
+                    start += 1
+
+                with locks[des]:
+                    for t in range(len(result)):
+                        des_pool[t] = result[t]
+                    if len(result) < range_r:
+                        des_pool[len(result)] = Neighbor(-1, -1)
+
+            else:
+                with locks[des]:
+                    for t in range(range_r):
+                        if des_pool[t].distance == -1:
+                            des_pool[t] = sn
+                            if t + 1 < range_r:
+                                des_pool[t + 1] = Neighbor(-1, -1)
+                            break
+
+
     def link(self, parameters, cut_graph):
         range_r = parameters['R']
-        step_size = self.n // 100
-        progress = itertools.count()
+        step_size = self.nd // 100
+        locks = [threading.Lock() for _ in range(self.nd)]
 
         def process_node(n):
             point = self.data[n * self.dimension:(n + 1) * self.dimension]
@@ -177,8 +242,18 @@ class IndexNSG:
             self.get_neighbors(point, parameters, flags, tmp, pool)
             self.sync_prune(n, pool, parameters, flags, cut_graph)
 
+        # First parallel execution block
         with ThreadPoolExecutor(max_workers=step_size) as executor:
-            executor.map(process_node, range(self.n))
+            list(executor.map(process_node, range(self.nd)))
+
+        # InterInsert now includes locks as a parameter
+        def call_interinsert(n):
+            self.inter_insert(n, range_r, locks, cut_graph)
+
+        # Second parallel execution block
+        with ThreadPoolExecutor(max_workers=step_size) as executor:
+            list(executor.map(call_interinsert, range(self.nd)))
+
 
 
     def build(self, n, data, parameters):
