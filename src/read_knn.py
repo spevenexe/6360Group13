@@ -21,8 +21,8 @@ def load_data(filename):
 
     return data, num, dim
 
-filename = "./benchmarks/sift.50NN.graph"
-data, num, dim = load_data(filename)
-print("Data loaded:")
-print(data)
-print(f"Number of data points: {num}, Dimension of each point: {dim}")
+# filename = "./benchmarks/sift.50NN.graph"
+# data, num, dim = load_data(filename)
+# print("Data loaded:")
+# print(data)
+# print(f"Number of data points: {num}, Dimension of each point: {dim}")
