@@ -22,11 +22,11 @@ In the root directory of the repository,
 python src/search_test_graph.py data_file query_file nsg_path search_LK keepConstant
 ```
 
-`data_file` - the path to the base vectors of the dataset
-`query_file` - the path to the query vectors of the dataset
-`nsg_path` - the path to the built NSG
-`search_LK` - the value (L or K) to keep constant
-`keepConstant` - a flag determining whether to keep L or K constant. 0 for L, otherwise K
+`data_file` - the path to the base vectors of the dataset <br>
+`query_file` - the path to the query vectors of the dataset <br>
+`nsg_path` - the path to the built NSG <br>
+`search_LK` - the value (L or K) to keep constant <br>
+`keepConstant` - a flag determining whether to keep L or K constant. 0 for L, otherwise K <br>
 
 This can generally take about a minute to run. If you want to run single search tests, instead run:
 
@@ -34,8 +34,8 @@ This can generally take about a minute to run. If you want to run single search 
 python src/nsg_serach.py data_file query_file nsg_path search_L search_K
 ```
 
-`data_file` - the path to the base vectors of the dataset
-`query_file` - the path to the query vectors of the dataset
-`nsg_path` - the path to the built NSG
-`search_L` - the L value of the search. Higher values are more accurate but cause longer runtimes.Cannot be smaller than `search_K`
-`search_K` - the K nearest neighbors to find
+`data_file` - the path to the base vectors of the dataset <br>
+`query_file` - the path to the query vectors of the dataset <br>
+`nsg_path` - the path to the built NSG <br>
+`search_L` - the L value of the search. Higher values are more accurate but cause longer runtimes.Cannot be smaller than `search_K` <br>
+`search_K` - the K nearest neighbors to find <br>
