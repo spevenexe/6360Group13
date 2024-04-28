@@ -355,7 +355,7 @@ class IndexNSG:
         # print("L: ",parameters.get("L_search"))
         L = int(parameters.get("L_search"))
         data = x
-        retset = np.empty(L+1,Neighbor)
+        returnSet = np.empty(L+1,Neighbor)
         init_ids = np.zeros(L,int)
         flags = np.empty(self.n,bool)
         for b in flags:
@@ -380,36 +380,36 @@ class IndexNSG:
         for i in range(0,len(init_ids)):
             id = init_ids[i]
             dist = self.distance(data[id],query)
-            retset[i] = Neighbor(id, dist, True)
+            returnSet[i] = Neighbor(id, dist, True)
         
-        retset[0:L] = sorted(retset[0:L])
+        returnSet[0:L] = sorted(returnSet[0:L])
         # print(retset)
         k = 0
         while k < L:
-            nk = L
+            next_k = L
             
-            if retset[k].flag:
-                retset[k].flag = False
-                n = retset[k].id
+            if returnSet[k].flag:
+                returnSet[k].flag = False
+                n = returnSet[k].id
                 
                 for m in range(0,len(self.final_graph[n])):
                     id = self.final_graph[n][m]
                     if flags[id]: continue
                     flags[id] = True
                     dist = self.distance(query,data[id])
-                    if dist >= retset[L-1].distance: continue
+                    if dist >= returnSet[L-1].distance: continue
                     nn = Neighbor(id,dist,True)
                     # TODO: make InsertIntoPool
-                    r = insert_into_pool(retset,L,nn)
+                    right = insert_into_pool(returnSet,L,nn)
                     
-                    if r < nk: 
-                        nk = r
-            if nk <= k:
-                k = nk
+                    if right < next_k: 
+                        next_k = right
+            if next_k <= k:
+                k = next_k
             else:
                 k+=1    
         for i in range(0,K):
-            indices[i] = retset[i].id      
+            indices[i] = returnSet[i].id      
         
         return indices
         
