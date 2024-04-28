@@ -163,69 +163,56 @@ class IndexNSG:
         if len(result) < range_r:
             cut_graph[q * range_r + len(result)].distance = -1
 
-
+    # finish this
     def inter_insert(self, n, range_r, locks, cut_graph):
-        src_pool = cut_graph[n]
 
         for i in range(range_r):
-            if src_pool[i].distance == -1:
-                break
-            sn = Neighbor(n, src_pool[i].distance)
-            des = src_pool[i].id
+            if cut_graph[n*range_r+i].distance == -1: break
 
-            if des >= len(cut_graph):
-                continue
+            sn = Neighbor(n, cut_graph[n*range_r+i].distance)
+            des = cut_graph[n*range_r+i].id
 
-            des_pool = cut_graph[des]
             temp_pool = []
-            dup = 0
-
-            with locks[des]:
+            dup = False
+            lock = locks[des]
+            with lock:
                 for j in range(range_r):
-                    if des_pool[j].distance == -1:
-                        break
-                    if n == des_pool[j].id:
-                        dup = 1
-                        break
-                    temp_pool.append(des_pool[j])
+                    if cut_graph[des*range_r+j].distance == -1: break
+                    if n == cut_graph[des*range_r+j].id: dup = True; break
+                    temp_pool.append(cut_graph[des*range_r+j])
 
-            if dup:
-                continue
+            if dup: continue
 
             temp_pool.append(sn)
-            temp_pool.sort()
-
             if len(temp_pool) > range_r:
-                result = [temp_pool[0]]
-                start = 1
-                while len(result) < range_r and start < len(temp_pool):
+                start = 0
+                temp_pool.sort()
+                result = [temp_pool[start]]
+                while len(result) < range_r and start + 1 < len(temp_pool):
+                    start += 1
                     p = temp_pool[start]
                     occlude = False
                     for t in result:
                         if p.id == t.id:
                             occlude = True
                             break
-                        djk = np.linalg.norm(self.data[t.id] - self.data[p.id])
+                        djk = self.euclidean_distance(t.id, p.id)
                         if djk < p.distance:
                             occlude = True
                             break
                     if not occlude:
                         result.append(p)
-                    start += 1
 
-                with locks[des]:
-                    for t in range(len(result)):
-                        des_pool[t] = result[t]
-                    if len(result) < range_r:
-                        des_pool[len(result)] = Neighbor(-1, -1)
-
+                with lock:
+                    for i,t in enumerate(result):
+                        cut_graph[des*range_r+i] = t
             else:
-                with locks[des]:
+                with lock:
                     for t in range(range_r):
-                        if des_pool[t].distance == -1:
-                            des_pool[t] = sn
+                        if cut_graph[t+des*range_r].distance == -1:
+                            cut_graph[t+des*range_r] = sn
                             if t + 1 < range_r:
-                                des_pool[t + 1] = Neighbor(-1, -1)
+                                cut_graph[t + 1 + des*range_r].distance = -1
                             break
 
 
