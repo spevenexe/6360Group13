@@ -40,4 +40,13 @@ python src/nsg_serach.py data_file query_file nsg_path search_L search_K
 `search_L` - the L value of the search. Higher values are more accurate but cause longer runtimes. Cannot be smaller than `search_K` <br>
 `search_K` - the K nearest neighbors to find <br>
 
-Note that a prebuilt NSG for SIFT10K can be found at `benchmarks/sift.50NN.graph`
+Note that a prebuilt NSG for SIFT10K can be found at `benchmarks/sift.50NN.graph`.
+
+## Experiments
+
+For searching, we ran the following command to generate the graphs:
+```shell
+python src/search_test_graph.py pathtoSIFT10Kbase.fvecs pathtoSIFT10Kquery.fvecs nsg_path 50 0
+
+python src/search_test_graph.py pathtoSIFT10Kbase.fvecs pathtoSIFT10Kquery.fvecs nsg_path 50 1
+```
