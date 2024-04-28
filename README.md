@@ -9,7 +9,7 @@ Run the following requirement installing command (or equivalent for your python 
 pip install -r requirements.txt
 ```
 
-Tests were run on files in `.fvecs` format. We tested our code with the commonly used [SIFT1M](http://corpus-texmex.irisa.fr/). 
+Tests were run on files in `.fvecs` format. We tested our code with the commonly used [SIFT10K and SIFT1M](http://corpus-texmex.irisa.fr/). These are `tar` files transferred through FTP, so some form of `wget` and `tar` are necessary to download and extract these files.
 
 ## Running
 
@@ -39,3 +39,5 @@ python src/nsg_serach.py data_file query_file nsg_path search_L search_K
 `nsg_path` - the path to the built NSG <br>
 `search_L` - the L value of the search. Higher values are more accurate but cause longer runtimes. Cannot be smaller than `search_K` <br>
 `search_K` - the K nearest neighbors to find <br>
+
+Note that a prebuilt NSG for SIFT10K can be found at `benchmarks/sift.50NN.graph`
