@@ -37,5 +37,5 @@ python src/nsg_serach.py data_file query_file nsg_path search_L search_K
 `data_file` - the path to the base vectors of the dataset <br>
 `query_file` - the path to the query vectors of the dataset <br>
 `nsg_path` - the path to the built NSG <br>
-`search_L` - the L value of the search. Higher values are more accurate but cause longer runtimes.Cannot be smaller than `search_K` <br>
+`search_L` - the L value of the search. Higher values are more accurate but cause longer runtimes. Cannot be smaller than `search_K` <br>
 `search_K` - the K nearest neighbors to find <br>
