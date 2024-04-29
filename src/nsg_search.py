@@ -1,6 +1,6 @@
 import sys
 import time
-from read_knn import load_data
+from driver import load_data
 from indexNSG import IndexNSG
 from parameters import Parameters
 

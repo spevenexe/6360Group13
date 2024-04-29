@@ -4,7 +4,7 @@
 # original_path = sys.path.copy()
 # sys.path.append(os.path.abspath('../src'))
 import indexNSG
-from read_knn import load_data
+from driver import load_data
 # sys.path = original_path
 graph = indexNSG.IndexNSG(128, 10000, "L2")
 
