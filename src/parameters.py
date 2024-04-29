@@ -3,7 +3,7 @@ class Parameters:
         self.params = {}
 
     def set(self, name, value):
-        self.params[name] = str(value)
+        self.params[name] = value
 
     def get(self, name, default=None):
         return self.params.get(name, default)
