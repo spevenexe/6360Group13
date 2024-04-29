@@ -68,6 +68,12 @@ Note that prebuilt NSGs for SIFT10K can be found in `./siftsmall`.
 
 ## Experiments
 
+For building, we ran the following command.
+
+```shell
+python src/driver.py siftsmall/siftsmall_base.fvecs benchmarks/sift.50NN.graph 100 25 125 siftsmall/siftsmall.nsg
+```
+
 For searching, we ran the following command to generate the graphs.
 
 For constant L:
