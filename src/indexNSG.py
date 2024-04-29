@@ -60,28 +60,26 @@ class IndexNSG:
                 if GK > 0:
                     f.write(struct.pack(f'{GK}I', *neighbors))
 
-    # tested and correct
     def load_nn_graph(self, filename):
         with open(filename, 'rb') as f:
             graph_data = np.fromfile(f, dtype=np.uint32)
             k = graph_data[0]
             self.final_graph = graph_data.reshape(-1, k+1)[:,1:].tolist()
 
-    def get_neighbors(self, query, parameters):
+    def get_neighbors(self, query, parameters, flags = np.zeros(10000,  dtype=bool)):
         L = parameters.get("L", 10)
         retset = []
         fullset = []
-        flags = np.zeros(self.n, dtype=bool)
 
         # Initialize neighbors
-        init_ids = list(self.final_graph[self.ep][:L])
+        init_ids = list(self.final_graph[self.ep][:int(L)])
         flags[init_ids] = True
-        additional_ids = np.random.choice([i for i in range(self.nd) if not flags[i]], size=L-len(init_ids), replace=False)
+        additional_ids = np.random.choice([i for i in range(self.n) if not flags[i]], size=L-len(init_ids), replace=False)
         init_ids.extend(additional_ids)
         flags[additional_ids] = True
 
         for id in init_ids:
-            if id < self.nd:
+            if id < self.n:
                 dist = distance.euclidean(self.data[id], query)
                 retset.append(Neighbor(id, dist, True))
 
@@ -115,13 +113,14 @@ class IndexNSG:
         center = np.mean(self.data, axis=0)
         self.ep = random.randint(0, self.n - 1)
         retset, _ = self.get_neighbors(center, parameters)
-        self.ep = retset[0][0]
+        self.ep = retset[0].id
 
 
     def sync_prune(self, q, pool, parameter, flags, cut_graph):
-        range_r = parameter['R']
-        maxc = parameter['C']
+        range_r = parameter.get('R')
+        maxc = parameter.get('C')
         start = 0
+        self.width = range_r
 
         # Collect eligible neighbors
         for nn in self.final_graph[q]:
@@ -163,7 +162,6 @@ class IndexNSG:
         if len(result) < range_r:
             cut_graph[q * range_r + len(result)].distance = -1
 
-    # finish this
     def inter_insert(self, n, range_r, locks, cut_graph):
 
         for i in range(range_r):
@@ -196,7 +194,7 @@ class IndexNSG:
                         if p.id == t.id:
                             occlude = True
                             break
-                        djk = self.euclidean_distance(t.id, p.id)
+                        djk = distance.euclidean(self.data[t.id], self.data[p.id])
                         if djk < p.distance:
                             occlude = True
                             break
@@ -217,21 +215,22 @@ class IndexNSG:
 
 
     def link(self, parameters, cut_graph):
-        range_r = parameters['R']
-        step_size = self.nd // 100
-        locks = [threading.Lock() for _ in range(self.nd)]
+        range_r = parameters.get('R')
+        step_size = self.n // 100
+        locks = [threading.Lock() for _ in range(self.n)]
 
         def process_node(n):
-            point = self.data[n * self.dimension:(n + 1) * self.dimension]
+            point = self.data[n]
             pool, tmp = [], []
-            flags = np.zeros(self.nd, dtype=bool)
+            flags = np.zeros(self.n, dtype=bool)
 
-            self.get_neighbors(point, parameters, flags, tmp, pool)
+            tmp, pool = self.get_neighbors(point, parameters, flags)
             self.sync_prune(n, pool, parameters, flags, cut_graph)
+
 
         # First parallel execution block
         with ThreadPoolExecutor(max_workers=step_size) as executor:
-            list(executor.map(process_node, range(self.nd)))
+            list(executor.map(process_node, range(self.n)))
 
         # InterInsert now includes locks as a parameter
         def call_interinsert(n):
@@ -239,13 +238,13 @@ class IndexNSG:
 
         # Second parallel execution block
         with ThreadPoolExecutor(max_workers=step_size) as executor:
-            list(executor.map(call_interinsert, range(self.nd)))
+            list(executor.map(call_interinsert, range(self.n)))
 
 
 
     def build(self, n, data, parameters):
-        nn_graph_path = parameters['nn_graph_path']
-        range_r = parameters['R']
+        nn_graph_path = parameters.get('nn_graph_path')
+        range_r = 12
         self.load_nn_graph(nn_graph_path)
         self.data = data
         self.init_graph(parameters)
@@ -420,7 +419,7 @@ class IndexNSG:
         tmp = root
         stack = [root]
         if not flag[root]:
-            cnt[0] += 1
+            cnt += 1
         flag[root] = True
         while stack:
             next_node = None
@@ -437,7 +436,7 @@ class IndexNSG:
             tmp = next_node
             flag[tmp] = True
             stack.append(tmp)
-            cnt[0] += 1
+            cnt += 1
         return flag, cnt
 
     def findroot(self, flag, root, parameter):
@@ -450,13 +449,13 @@ class IndexNSG:
         if id == self.n:
             return  # No Unlinked Node
 
-        tmp, pool = self.get_neighbors(self.data + self.dimension * id, parameter)
+        tmp, pool = self.get_neighbors(self.data[id], parameter)
         pool.sort()
 
         found = False
         for neighbor in pool:
             if flag[neighbor.id]:
-                root[0] = neighbor.id
+                root = neighbor.id
                 found = True
                 break
 
@@ -464,10 +463,10 @@ class IndexNSG:
             while True:
                 rid = random.randint(0, self.n - 1)
                 if flag[rid]:
-                    root[0] = rid
+                    root = rid
                     break
 
-        self.final_graph[root[0]].append(id)
+        self.final_graph[root].append(id)
     
 
     def tree_grow(self, parameter):
@@ -481,5 +480,5 @@ class IndexNSG:
             self.findroot(flags, root, parameter)
 
         for i in range(self.n):
-            if len(self.final_graph[i]) > width:
-                width = len(self.final_graph[i])
+            if len(self.final_graph[i]) > self.width:
+                self.width = len(self.final_graph[i])
