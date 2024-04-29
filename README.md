@@ -32,12 +32,12 @@ Building a NSG requires a kNN. Our project used [efanna_graph](https://github.co
 python src/driver.py data_file nn_graph_path L R C save_graph_file
 ```
 
-`data_file` - the path to the dataset file
-`nn_graph_path` - the path to the kNN graph file
-`L` - the size of the candidate pool (larger L can improve accuracy but uses more memory and computation)
-`R` - the number of nearest expanded nodes to consider during the graph building process
+`data_file` - the path to the dataset file  
+`nn_graph_path` - the path to the kNN graph file  
+`L` - the size of the candidate pool (larger L can improve accuracy but uses more memory and computation)  
+`R` - the number of nearest expanded nodes to consider during the graph building process  
 `C` - the number of neighbors in the final graph for each node
-save_graph_file - the path where the built NSG should be saved
+save_graph_file - the path where the built NSG should be saved  
 
 ### Running a search test
 In the root directory of the repository,
