@@ -5,8 +5,8 @@ from indexNSG import IndexNSG
 from parameters import Parameters
 
 def main():
-    if(len(sys.argv) != 7):
-        print(sys.argv[0], " data_file query_file nsg_path search_L search_K result_path")
+    if(len(sys.argv) != 6):
+        print(sys.argv[0], " data_file query_file nsg_path search_L search_K")
         exit(-1)
         
     filename = "./vecs/siftsmall/siftsmall_base.fvecs"
