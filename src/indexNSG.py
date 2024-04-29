@@ -71,7 +71,7 @@ class IndexNSG:
         L = parameters.get("L", 10)
         retset = []
         fullset = []
-        flags = np.zeros(self.nd, dtype=bool)
+        flags = np.zeros(self.n, dtype=bool)
 
         # Initialize neighbors
         init_ids = list(self.final_graph[self.ep][:L])
