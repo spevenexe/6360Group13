@@ -1,5 +1,5 @@
 # 6360Group13
-A project implementation of NSG, for CS6360.001, Spring 2024
+A project implementation of [NSG](https://vldb.org/pvldb/vol12/p461-fu.pdf), for CS6360.001, Spring 2024.
 
 ## Setup
 It recommended to setup a [Python virtual environment](https://docs.python.org/3/library/venv.html) before beginning.
@@ -20,42 +20,52 @@ Extraction with tar:
 tar -xzvf siftsmall.tar.gz
 ```
 
+Files for SIFT10K are already provided in `./siftsmall`
+
 ## Running
 
 ### Building a NSG
+
+Building a NSG requires a kNN. Our project used [efanna_graph](https://github.com/ZJULearning/efanna_graph) to create ours. However, there is one kNN provided for SIFT10K in `benchmarks/sift.50NN.graph`.
+
+
 
 ### Running a search test
 In the root directory of the repository,
 
 ```shell
-python src/search_test_graph.py data_file query_file nsg_path search_LK keepConstant
+python src/search_test_graph.py base_file query_file nsg_file search_constant setConstantK
 ```
 
-`data_file` - the path to the base vectors of the dataset  
+`base_file` - the path to the base vectors of the dataset  
 `query_file` - the path to the query vectors of the dataset  
-`nsg_path` - the path to the built NSG  
-`search_LK` - the value (L or K) to keep constant  
-`keepConstant` - a flag determining whether to keep L or K constant. 0 for L, otherwise K
+`nsg_file` - the path to the built NSG  
+`search_constant` - the value (L or K) to keep constant  
+`setConstantK` - a flag determining whether to keep L or K constant. 0 for L, otherwise K
 
 This can generally take about a minute to run. If you want to run single search tests, instead run:
 
 ```shell
-python src/nsg_serach.py data_file query_file nsg_path search_L search_K
+python src/nsg_search.py base_file query_file nsg_file L K
 ```
 
-`data_file` - the path to the base vectors of the dataset  
+`base_file` - the path to the base vectors of the dataset  
 `query_file` - the path to the query vectors of the dataset  
-`nsg_path` - the path to the built NSG  
-`search_L` - the L value of the search. Higher values are more accurate but cause longer runtimes. Cannot be smaller than `search_K`  
-`search_K` - the K nearest neighbors to find  
+`nsg_file` - the path to the built NSG  
+`L` - the L value (candidate neighbor pool size) of the search. Higher values are more accurate but cause longer runtimes. Cannot be smaller than `K`  
+`K` - the K nearest neighbors to find  
 
-Note that a prebuilt NSG for SIFT10K can be found at `benchmarks/sift.50NN.graph`.
+Note that prebuilt NSGs for SIFT10K can be found in `./siftsmall`.
 
 ## Experiments
 
-For searching, we ran the following command to generate the graphs:
-```shell
-python src/search_test_graph.py pathtoSIFT10Kbase.fvecs pathtoSIFT10Kquery.fvecs nsg_path 50 0
+For searching, we ran the following command to generate the graphs.
 
-python src/search_test_graph.py pathtoSIFT10Kbase.fvecs pathtoSIFT10Kquery.fvecs nsg_path 50 1
+For constant L:
+```shell
+python src/search_test_graph.py siftsmall/siftsmall_base.fvecs siftsmall/siftsmall_query.fvecs siftsmall/siftsmall0.nsg 50 0
+```
+For constant K:
+```shell
+python src/search_test_graph.py siftsmall/siftsmall_base.fvecs siftsmall/siftsmall_query.fvecs siftsmall/siftsmall0.nsg 50 1
 ```
