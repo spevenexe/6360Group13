@@ -51,7 +51,7 @@ def main():
 
     indexing_time = end_time - start_time
     print(f"indexing time: {indexing_time}")
-    index.save(sys.argv[6])
+    index.save(save_graph_file)
 
 if __name__ == "__main__":
     main()
